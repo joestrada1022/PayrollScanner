@@ -1,7 +1,17 @@
 import numpy as np
-import pytesseract
-import cv2
+import pytesseract, cv2, argparse
 from PIL import Image
+
+parser = argparse.ArgumentParser(description="automating hours entry through OCR")
+parser.add_argument(
+    "ImagePath", help="Path to the image file", metavar="path", type=str
+)
+args = parser.parse_args()
+
+if args.ImagePath is None:
+    print("Usage: python scanner.py <image>")
+    exit()
+
 
 pytesseract.pytesseract.tesseract_cmd = (
     "C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
@@ -22,7 +32,8 @@ def get_limits(color):
 
 
 lower, upper = get_limits(color=(245, 0, 0))
-image = cv2.imread("croppedHours2.jpg", cv2.IMREAD_REDUCED_COLOR_4)
+image = cv2.imread(args.ImagePath, cv2.IMREAD_REDUCED_COLOR_4)
+image = cv2.bilateralFilter(image, 11, 17, 17)
 # original was 127-255
 thresh = cv2.threshold(image, 148, 255, cv2.THRESH_BINARY)[1]
 
@@ -33,11 +44,11 @@ cv2.imshow("image", mask)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
 
-image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-h, w = image.shape
+h, w = gray.shape
 left = mask[:, : w // 2]
-right = image[:, w // 2 :]
+right = mask[:, w // 2 :]
 cv2.imshow("Left", left)
 cv2.imshow("Right", right)
 cv2.waitKey(0)
