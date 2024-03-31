@@ -1,6 +1,8 @@
 import numpy as np
 import pytesseract, cv2, argparse
 from PIL import Image
+import matplotlib.pyplot as plt
+
 
 parser = argparse.ArgumentParser(description="automating hours entry through OCR")
 parser.add_argument(
@@ -33,6 +35,7 @@ def get_limits(color):
 
 lower, upper = get_limits(color=(245, 0, 0))
 image = cv2.imread(args.ImagePath, cv2.IMREAD_REDUCED_COLOR_4)
+image = image[: int(image.shape[0] * 0.85), :]
 image = cv2.bilateralFilter(image, 11, 17, 17)
 # original was 127-255
 thresh = cv2.threshold(image, 148, 255, cv2.THRESH_BINARY)[1]
@@ -40,15 +43,29 @@ thresh = cv2.threshold(image, 148, 255, cv2.THRESH_BINARY)[1]
 hsvImage = cv2.cvtColor(thresh, cv2.COLOR_BGR2HSV)
 
 mask = cv2.inRange(hsvImage, lower, upper)
-cv2.imshow("image", mask)
+
+binr = cv2.threshold(mask, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+kernel = np.ones((2, 2), np.uint8)
+erosion = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=1)
+cv2.imshow("image", erosion)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
 
-gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+pil_img = Image.fromarray(erosion)
 
-h, w = gray.shape
-left = mask[:, : w // 2]
-right = mask[:, w // 2 :]
+bbox = pil_img.getbbox()
+
+if bbox is not None:
+    x1, y1, x2, y2 = bbox
+    cropped = mask[y1 + 10 : y2 + 10, x1 - 10 : x2 - 10]
+    cv2.imshow("cropped", cropped)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+
+h, w = cropped.shape[:2]
+left = cropped[:, : w // 2]
+right = cropped[:, (w // 2) + 10 :]
 cv2.imshow("Left", left)
 cv2.imshow("Right", right)
 cv2.waitKey(0)
