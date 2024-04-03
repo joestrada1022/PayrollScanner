@@ -94,9 +94,22 @@ for box in grouped_boxes:
     row = cropped[
         box[1] - threshold : box[3] + threshold, box[0] - threshold : box[2] + threshold
     ]
-    cv2.imshow("Isolated Rows", row)
+    h, w = row.shape[:2]
+    left = row[:, : w // 2]
+    right = row[:, w // 2 :]
+    cv2.imshow("left", left)
+    cv2.imshow("right", right)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+    img = Image.fromarray(left)
+    img2 = Image.fromarray(right)
+    numConf = " -l eng --oem 3 --psm 6 -c tessedit_char_whitelist=0123456789."
+    letterConf = (
+        " -l eng --oem 3 --psm 3 -c tessedit_char_whitelist=abcdefghijklmnopqrstuvwxyz"
+    )
+    text = pytesseract.image_to_string(img, config=letterConf)
+    text2 = pytesseract.image_to_string(img2, config=numConf)
+    print((text, text2))
 exit()
 
 h, w = cropped.shape[:2]
