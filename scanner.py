@@ -62,6 +62,38 @@ if bbox is not None:
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
+min_area = 10
+contours, _ = cv2.findContours(cropped, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > min_area]
+# Draw bounding boxes around remaining contours to isolate rows of text
+cropped = cv2.cvtColor(cropped, cv2.COLOR_GRAY2BGR)
+# Group bounding boxes along the vertical axis
+grouped_boxes = []
+for contour in filtered_contours:
+    x, y, w, h = cv2.boundingRect(contour)
+    grouped = False
+    for box in grouped_boxes:
+        if abs(y - box[1]) < 20:  # adjust this threshold as needed
+            box[0] = min(box[0], x)
+            box[1] = min(box[1], y)
+            box[2] = max(box[2], x + w)
+            box[3] = max(box[3], y + h)
+            grouped = True
+            break
+    if not grouped:
+        grouped_boxes.append([x, y, x + w, y + h])
+
+threshold = 2.5
+# Draw bounding boxes around grouped boxes to isolate rows of text
+for box in grouped_boxes:
+    # cv2.rectangle(cropped, (box[0], box[1]), (box[2], box[3]), (0, 255, 0), 1)
+    row = cropped[
+        box[1] - threshold : box[3] + threshold, box[0] - threshold : box[2] + threshold
+    ]
+    cv2.imshow("Isolated Rows", row)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+exit()
 
 h, w = cropped.shape[:2]
 left = cropped[:, : w // 2]
