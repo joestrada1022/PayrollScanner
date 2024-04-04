@@ -103,7 +103,7 @@ for box in grouped_boxes:
     cv2.destroyAllWindows()
     img = Image.fromarray(left)
     img2 = Image.fromarray(right)
-    numConf = " -l eng --oem 3 --psm 6 -c tessedit_char_whitelist=0123456789."
+    numConf = " -l eng --oem 3 --psm 6 digits"
     letterConf = (
         " -l eng --oem 3 --psm 3 -c tessedit_char_whitelist=abcdefghijklmnopqrstuvwxyz"
     )
