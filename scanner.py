@@ -38,7 +38,7 @@ image = cv2.imread(args.ImagePath, cv2.IMREAD_REDUCED_COLOR_4)
 image = image[: int(image.shape[0] * 0.85), :]
 image = cv2.bilateralFilter(image, 11, 17, 17)
 # original was 127-255
-thresh = cv2.threshold(image, 148, 255, cv2.THRESH_BINARY)[1]
+thresh = cv2.threshold(image, 145, 255, cv2.THRESH_BINARY)[1]
 
 hsvImage = cv2.cvtColor(thresh, cv2.COLOR_BGR2HSV)
 
@@ -110,25 +110,4 @@ for box in grouped_boxes:
     text = pytesseract.image_to_string(img, config=letterConf)
     text2 = pytesseract.image_to_string(img2, config=numConf)
     print((text, text2))
-exit()
-
-h, w = cropped.shape[:2]
-left = cropped[:, : w // 2]
-right = cropped[:, (w // 2) + 10 :]
-cv2.imshow("Left", left)
-cv2.imshow("Right", right)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
-
-img = Image.fromarray(left)
-img2 = Image.fromarray(right)
-numConf = " -l eng --oem 3 --psm 6 -c tessedit_char_whitelist=0123456789."
-letterConf = (
-    " -l eng --oem 3 --psm 3 -c tessedit_char_whitelist=abcdefghijklmnopqrstuvwxyz"
-)
-text = pytesseract.image_to_string(img, config=letterConf)
-text2 = pytesseract.image_to_string(img2, config=numConf)
-
-with open("output.txt", "w") as f:
-    f.write(text)
-    f.write(text2)
+    # TODO isntead of printing, add to dictionary
