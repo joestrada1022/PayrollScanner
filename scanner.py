@@ -89,6 +89,7 @@ for contour in filtered_contours:
 
 threshold = 4
 # Draw bounding boxes around grouped boxes to isolate rows of text
+timesheet = {}
 for box in grouped_boxes:
     # cv2.rectangle(cropped, (box[0], box[1]), (box[2], box[3]), (0, 255, 0), 1)
     row = cropped[
@@ -97,17 +98,14 @@ for box in grouped_boxes:
     h, w = row.shape[:2]
     left = row[:, : w // 2]
     right = row[:, w // 2 :]
-    cv2.imshow("left", left)
-    cv2.imshow("right", right)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+
     img = Image.fromarray(left)
     img2 = Image.fromarray(right)
     numConf = " -l eng --oem 3 --psm 6 digits"
     letterConf = (
         " -l eng --oem 3 --psm 3 -c tessedit_char_whitelist=abcdefghijklmnopqrstuvwxyz"
     )
-    text = pytesseract.image_to_string(img, config=letterConf)
-    text2 = pytesseract.image_to_string(img2, config=numConf)
-    print((text, text2))
-    # TODO isntead of printing, add to dictionary
+    name = pytesseract.image_to_string(img, config=letterConf)
+    hours = pytesseract.image_to_string(img2, config=numConf)
+    timesheet[name] = hours
+print(timesheet)
