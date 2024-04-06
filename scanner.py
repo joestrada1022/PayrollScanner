@@ -1,7 +1,9 @@
 import numpy as np
 import pytesseract, cv2, argparse
-from PIL import Image
+from PIL import Image, ImageTk
 import matplotlib.pyplot as plt
+import tkinter as tk
+from tkinter import messagebox, ttk
 
 
 parser = argparse.ArgumentParser(description="automating hours entry through OCR")
@@ -89,7 +91,7 @@ for contour in filtered_contours:
 
 threshold = 4
 # Draw bounding boxes around grouped boxes to isolate rows of text
-timesheet = {}
+timesheet = []
 for box in grouped_boxes:
     # cv2.rectangle(cropped, (box[0], box[1]), (box[2], box[3]), (0, 255, 0), 1)
     row = cropped[
@@ -106,6 +108,89 @@ for box in grouped_boxes:
         " -l eng --oem 3 --psm 3 -c tessedit_char_whitelist=abcdefghijklmnopqrstuvwxyz"
     )
     name = pytesseract.image_to_string(img, config=letterConf)
+    name = name.replace("\n", "")
     hours = pytesseract.image_to_string(img2, config=numConf)
-    timesheet[name] = hours
+    hours = hours.replace("\n", "")
+    timesheet.append((name, hours))
+timesheet = reversed(timesheet)
+
+
+class OCRCorrectionApp:
+    def __init__(self, ocr_results, image):
+        self.ocr_results = ocr_results
+        self.image = image
+
+        self.root = tk.Tk()
+        self.root.title("OCR Correction")
+
+        self.tree = ttk.Treeview(self.root, columns=("Name", "Hours"), show="headings")
+        self.tree.heading("Name", text="Name")
+        self.tree.heading("Hours", text="Hours")
+        self.tree.bind("<Double-1>", self.on_double_click)
+        for name, hours in ocr_results:
+            self.tree.insert("", "end", values=(name, hours))
+        self.tree.pack(side=tk.LEFT, expand=True, fill="both")
+
+        self.load_image()
+
+    def on_double_click(self, event):
+        item = self.tree.selection()[0]
+        column = self.tree.identify_column(event.x)
+        col_index = int(str(column).split("#")[-1]) - 1
+        self.edit_cell(item, col_index)
+
+    def edit_cell(self, item, col_index):
+        edit_window = tk.Toplevel()
+        edit_window.title("Edit Cell")
+
+        label = tk.Label(edit_window, text="New Value:")
+        label.grid(row=0, column=0, padx=10, pady=5)
+
+        current_value = self.tree.item(item, "values")[col_index]  # Get current value
+        new_value = tk.Entry(edit_window)
+        new_value.insert(tk.END, current_value)  # Insert current value into entry
+        new_value.grid(row=0, column=1, padx=10, pady=5)
+        new_value.focus_set()  # Set focus to the entry field
+
+        save_button = tk.Button(
+            edit_window,
+            text="Save",
+            command=lambda: self.save_edit(edit_window, item, col_index, new_value),
+        )
+        save_button.grid(row=1, column=0, columnspan=2, padx=10, pady=5)
+
+    def save_edit(self, edit_window, item, col_index, new_value_entry):
+        new_val = new_value_entry.get().strip()
+        if new_val:
+            self.tree.item(
+                item,
+                values=(
+                    new_val if col_index == 0 else self.tree.item(item, "values")[0],
+                    new_val if col_index == 1 else self.tree.item(item, "values")[1],
+                ),
+            )
+            # Update the original list of tuples
+            index = int(item.split(" ")[1])  # Extract index from item ID
+            self.ocr_results[index] = (
+                new_val if col_index == 0 else self.tree.item(item, "values")[0],
+                new_val if col_index == 1 else self.tree.item(item, "values")[1],
+            )
+            edit_window.destroy()
+        else:
+            messagebox.showerror("Error", "Value cannot be empty!")
+
+    def load_image(self):
+        image_rgb = cv2.cvtColor(self.image, cv2.COLOR_BGR2RGB)
+        image_pil = Image.fromarray(image_rgb)
+        photo = ImageTk.PhotoImage(image_pil)
+        label = tk.Label(self.root, image=photo)
+        label.image = photo  # Keep a reference to the image to prevent it from being garbage collected
+        label.pack(side=tk.RIGHT, expand=True, fill="both")
+
+    def run(self):
+        self.root.mainloop()
+
+
+app = OCRCorrectionApp(timesheet, cropped)
+app.run()
 print(timesheet)
