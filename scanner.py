@@ -111,8 +111,7 @@ for box in grouped_boxes:
     name = name.replace("\n", "")
     hours = pytesseract.image_to_string(img2, config=numConf)
     hours = hours.replace("\n", "")
-    timesheet.append((name, hours))
-timesheet = reversed(timesheet)
+    timesheet.insert(0, (name, hours))
 
 
 class OCRCorrectionApp:
@@ -127,6 +126,7 @@ class OCRCorrectionApp:
         self.tree.heading("Name", text="Name")
         self.tree.heading("Hours", text="Hours")
         self.tree.bind("<Double-1>", self.on_double_click)
+        self.tree.bind("<Return>", self.on_double_click)
         for name, hours in ocr_results:
             self.tree.insert("", "end", values=(name, hours))
         self.tree.pack(side=tk.LEFT, expand=True, fill="both")
@@ -152,6 +152,11 @@ class OCRCorrectionApp:
         new_value.grid(row=0, column=1, padx=10, pady=5)
         new_value.focus_set()  # Set focus to the entry field
 
+        new_value.bind(
+            "<Return>",
+            lambda enter: self.save_edit(edit_window, item, col_index, new_value),
+        )
+
         save_button = tk.Button(
             edit_window,
             text="Save",
@@ -170,7 +175,7 @@ class OCRCorrectionApp:
                 ),
             )
             # Update the original list of tuples
-            index = int(item.split(" ")[1])  # Extract index from item ID
+            index = int(self.tree.index(item))
             self.ocr_results[index] = (
                 new_val if col_index == 0 else self.tree.item(item, "values")[0],
                 new_val if col_index == 1 else self.tree.item(item, "values")[1],
