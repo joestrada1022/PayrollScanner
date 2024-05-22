@@ -8,7 +8,7 @@ class Scanner:
         self.min_area = min_area
         self.text_color = text_color
 
-    def generate_timesheet(grouped_boxes, cropped, padding=4):
+    def generate_timesheet(self, grouped_boxes, cropped, padding=4):
         timesheet = []
         for box in grouped_boxes:
             # cv2.rectangle(cropped, (box[0], box[1]), (box[2], box[3]), (0, 255, 0), 1)
@@ -32,7 +32,7 @@ class Scanner:
 
         return timesheet
 
-    def get_bbox(self, erosion, mask):
+    def get_bbox(self, mask, erosion):
         erosion = Image.fromarray(erosion)
         bbox = erosion.getbbox()
         if bbox is not None:
@@ -69,7 +69,7 @@ class Scanner:
         return cropped, grouped_boxes
 
     def process(self, image):
-        lower, upper = self._get_color_bounds(color=(245, 0, 0))
+        lower, upper = self._get_color_bounds(rgb_value=(245, 0, 0))
         image = image[: int(image.shape[0] * 0.85), :]
         image = cv2.bilateralFilter(image, 11, 17, 17)
         thresh = cv2.threshold(image, 145, 255, cv2.THRESH_BINARY)[1]
@@ -81,7 +81,6 @@ class Scanner:
         binr = cv2.threshold(mask, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
         kernel = np.ones((2, 2), np.uint8)
         erosion = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=1)
-
         return mask, erosion
 
     def _get_color_bounds(self, rgb_value):
